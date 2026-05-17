@@ -85,6 +85,28 @@
   <!-- RIGHT PANEL: Properties -->
   <aside class="panel panel-right">
     <div class="panel-section">
+      <h2>Sjabloon</h2>
+      <div class="row-buttons template-switch">
+        <button id="tpl-synthetic" class="active">Getekend</button>
+        <button id="tpl-photo">Foto</button>
+      </div>
+      <div id="photo-controls" class="hidden">
+        <label class="file-btn block">
+          Foto kiezen…
+          <input type="file" id="bg-photo-input" accept="image/*" hidden />
+        </label>
+        <label class="row-label">
+          Doorzichtigheid
+          <input type="range" id="bg-photo-opacity" min="20" max="100" value="100" />
+          <span id="bg-photo-opacity-val">100%</span>
+        </label>
+        <button id="bg-photo-clear" class="danger">Foto verwijderen</button>
+        <p class="hint">De foto wordt de achtergrond; je kunt er symbolen en
+          tekst overheen plaatsen zoals normaal.</p>
+      </div>
+    </div>
+
+    <div class="panel-section">
       <h2>Stof &amp; afwerking</h2>
       <label class="row-label">
         Stofkleur

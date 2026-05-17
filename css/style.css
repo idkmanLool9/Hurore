@@ -134,6 +134,36 @@ button.danger:hover {
   display: inline-block;
 }
 
+.file-btn.block {
+  display: block;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Template switch (Getekend / Foto) */
+.template-switch {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: var(--radius);
+}
+.template-switch button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 7px 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.template-switch button.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+#photo-controls.hidden { display: none; }
+
 /* ---------- WORKSPACE ---------- */
 .workspace {
   display: grid;

@@ -21,6 +21,9 @@ const state = {
   defaultThread: "#d4af37",
   elements: [],   // each: {id, type:'symbol'|'text', symbolId?, text?, font?, x, y, size, rotation, color, flipH, flipV}
   selectedId: null,
+  template: "synthetic",  // "synthetic" | "photo"
+  photoDataUri: null,
+  photoOpacity: 1.0,
 };
 
 const history = {
@@ -53,6 +56,9 @@ function snapshot() {
     defaultThread: state.defaultThread,
     elements: state.elements,
     selectedId: state.selectedId,
+    template: state.template,
+    photoDataUri: state.photoDataUri,
+    photoOpacity: state.photoOpacity,
   });
 }
 
@@ -106,10 +112,23 @@ function renderDefs() {
 }
 
 function renderBackdrop() {
-  bgGroup.innerHTML = `<rect x="0" y="0" width="${HURORE_GEOMETRY.canvasW}" height="${HURORE_GEOMETRY.canvasH}" fill="transparent"/>`;
+  if (state.template === "photo" && state.photoDataUri) {
+    bgGroup.innerHTML = `<image href="${state.photoDataUri}"
+        x="0" y="0"
+        width="${HURORE_GEOMETRY.canvasW}" height="${HURORE_GEOMETRY.canvasH}"
+        preserveAspectRatio="xMidYMid meet"
+        opacity="${state.photoOpacity}"/>`;
+  } else {
+    bgGroup.innerHTML = `<rect x="0" y="0" width="${HURORE_GEOMETRY.canvasW}" height="${HURORE_GEOMETRY.canvasH}" fill="transparent"/>`;
+  }
 }
 
 function renderHuroreTemplate() {
+  // In photo mode the uploaded image IS the template, so skip the synthetic one.
+  if (state.template === "photo" && state.photoDataUri) {
+    huroreGroup.innerHTML = "";
+    return;
+  }
   huroreGroup.innerHTML = renderHurore({
     fabricColor: state.fabricColor,
     borderColor: state.borderColor,
@@ -541,8 +560,110 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ---------- TEMPLATE / PHOTO ----------
+const PHOTO_MAX_EDGE = 2000;       // resize uploads so localStorage doesn't blow up
+const PHOTO_JPEG_QUALITY = 0.85;
+
+function loadPhotoFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Kon bestand niet lezen"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Geen geldige afbeelding"));
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", PHOTO_JPEG_QUALITY));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function syncTemplateUi() {
+  const photoActive = state.template === "photo";
+  $("tpl-synthetic").classList.toggle("active", !photoActive);
+  $("tpl-photo").classList.toggle("active", photoActive);
+  $("photo-controls").classList.toggle("hidden", !photoActive);
+  $("bg-photo-opacity").value = Math.round(state.photoOpacity * 100);
+  $("bg-photo-opacity-val").textContent = Math.round(state.photoOpacity * 100) + "%";
+  $("bg-photo-clear").disabled = !state.photoDataUri;
+}
+
 // ---------- COLOR / SETTINGS BINDINGS ----------
 function setupBindings() {
+  // Template switch
+  $("tpl-synthetic").addEventListener("click", () => {
+    state.template = "synthetic";
+    syncTemplateUi();
+    renderBackdrop();
+    renderHuroreTemplate();
+    commit();
+  });
+  $("tpl-photo").addEventListener("click", () => {
+    if (!state.photoDataUri) {
+      $("bg-photo-input").click();
+      return;
+    }
+    state.template = "photo";
+    syncTemplateUi();
+    renderBackdrop();
+    renderHuroreTemplate();
+    commit();
+  });
+
+  $("bg-photo-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setStatus("Foto verwerken…");
+    try {
+      const dataUri = await loadPhotoFromFile(f);
+      state.photoDataUri = dataUri;
+      state.template = "photo";
+      syncTemplateUi();
+      renderBackdrop();
+      renderHuroreTemplate();
+      try {
+        commit();
+      } catch (err) {
+        // Most likely localStorage quota — keep the photo in memory but warn.
+        console.warn("Persist failed (photo te groot voor localStorage)", err);
+        setStatus("Foto geladen (te groot om automatisch op te slaan)");
+        return;
+      }
+      setStatus("Foto geladen");
+    } catch (err) {
+      alert("Foto laden mislukt: " + err.message);
+      setStatus("Klaar");
+    }
+  });
+
+  $("bg-photo-opacity").addEventListener("input", (e) => {
+    state.photoOpacity = Number(e.target.value) / 100;
+    $("bg-photo-opacity-val").textContent = e.target.value + "%";
+    renderBackdrop();
+  });
+  $("bg-photo-opacity").addEventListener("change", commit);
+
+  $("bg-photo-clear").addEventListener("click", () => {
+    if (!state.photoDataUri) return;
+    if (!confirm("Foto verwijderen?")) return;
+    state.photoDataUri = null;
+    state.template = "synthetic";
+    syncTemplateUi();
+    renderBackdrop();
+    renderHuroreTemplate();
+    commit();
+    setStatus("Foto verwijderd");
+  });
+
   $("fabric-color").addEventListener("input", (e) => {
     state.fabricColor = e.target.value;
     renderDefs();
@@ -809,6 +930,7 @@ function renderAll() {
   $("fringe-color").value = state.fringeColor;
   $("default-thread").value = state.defaultThread;
   $("border-style").value = state.borderStyle;
+  syncTemplateUi();
 }
 
 // ---------- BOOT ----------
