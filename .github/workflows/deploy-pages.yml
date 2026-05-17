@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - claude/hurore-design-app-4K9ww
+      - "claude/**"
   workflow_dispatch:
 
 permissions:
