@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hurore Designer — Syrisch-Orthodoxe Stola Ontwerper</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">✚</span>
+    <div>
+      <h1>Hurore Designer</h1>
+      <p class="tagline">Ontwerp je eigen Syrisch-orthodoxe Hurore</p>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button id="btn-new" title="Nieuw ontwerp">Nieuw</button>
+    <button id="btn-undo" title="Ongedaan maken (Ctrl+Z)">↶ Undo</button>
+    <button id="btn-redo" title="Opnieuw uitvoeren (Ctrl+Y)">↷ Redo</button>
+    <span class="divider"></span>
+    <button id="btn-save">Opslaan (JSON)</button>
+    <label class="file-btn">
+      Laden
+      <input type="file" id="file-load" accept="application/json" hidden />
+    </label>
+    <span class="divider"></span>
+    <button id="btn-export-svg">Export SVG</button>
+    <button id="btn-export-png" class="primary">Export PNG</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <!-- LEFT PANEL: Symbol library -->
+  <aside class="panel panel-left">
+    <div class="panel-section">
+      <h2>Template</h2>
+      <div class="seg-control" id="view-mode">
+        <button data-mode="flat" class="active">Plat (ontwerp)</button>
+        <button data-mode="worn">Gedragen</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Symbolen</h2>
+      <p class="hint">Klik op een symbool om het toe te voegen aan de Hurore.</p>
+      <div id="symbol-library" class="symbol-grid"></div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Tekst</h2>
+      <div class="row">
+        <input type="text" id="text-input" placeholder="Voeg tekst toe..." />
+        <button id="btn-add-text" class="primary">+ Tekst</button>
+      </div>
+      <label class="row-label">
+        Lettertype
+        <select id="text-font">
+          <option value="Cinzel, serif">Cinzel (Klassiek)</option>
+          <option value="Cormorant Garamond, serif">Cormorant</option>
+          <option value="Estrangelo Edessa, Serto Jerusalem, serif">Syriac</option>
+          <option value="UnifrakturMaguntia, serif">Gothic</option>
+          <option value="Georgia, serif">Georgia</option>
+        </select>
+      </label>
+    </div>
+  </aside>
+
+  <!-- CENTER: Canvas -->
+  <section class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <div class="zoom-controls">
+        <button id="zoom-out">−</button>
+        <span id="zoom-label">100%</span>
+        <button id="zoom-in">+</button>
+        <button id="zoom-fit">Aanpassen</button>
+      </div>
+      <div class="status" id="status">Klaar</div>
+    </div>
+    <div class="canvas-container" id="canvas-container">
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 1200 1600" preserveAspectRatio="xMidYMid meet">
+        <defs id="canvas-defs"></defs>
+        <g id="bg-group"></g>
+        <g id="hurore-group"></g>
+        <g id="elements-group"></g>
+        <g id="overlay-group"></g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL: Properties -->
+  <aside class="panel panel-right">
+    <div class="panel-section">
+      <h2>Stof &amp; afwerking</h2>
+      <label class="row-label">
+        Stofkleur
+        <input type="color" id="fabric-color" value="#c1272d" />
+      </label>
+      <label class="row-label">
+        Randkleur (galon)
+        <input type="color" id="border-color" value="#d4af37" />
+      </label>
+      <label class="row-label">
+        Franjekleur
+        <input type="color" id="fringe-color" value="#d4af37" />
+      </label>
+      <label class="row-label">
+        Randstijl
+        <select id="border-style">
+          <option value="brocade">Brocaat</option>
+          <option value="solid">Effen</option>
+          <option value="rope">Koord</option>
+          <option value="none">Geen</option>
+        </select>
+      </label>
+      <label class="row-label">
+        Standaard borduurkleur
+        <input type="color" id="default-thread" value="#d4af37" />
+      </label>
+      <div class="preset-row">
+        <button class="preset" data-fabric="#c1272d" data-border="#d4af37" data-thread="#d4af37">Rood/Goud</button>
+        <button class="preset" data-fabric="#c1272d" data-border="#c0c0c0" data-thread="#e8e8e8">Rood/Zilver</button>
+        <button class="preset" data-fabric="#ffffff" data-border="#d4af37" data-thread="#d4af37">Wit/Goud</button>
+        <button class="preset" data-fabric="#1f3a5f" data-border="#d4af37" data-thread="#d4af37">Blauw/Goud</button>
+        <button class="preset" data-fabric="#2d6a3e" data-border="#d4af37" data-thread="#d4af37">Groen/Goud</button>
+        <button class="preset" data-fabric="#4a154b" data-border="#d4af37" data-thread="#d4af37">Paars/Goud</button>
+        <button class="preset" data-fabric="#1a1a1a" data-border="#c0c0c0" data-thread="#c0c0c0">Zwart/Zilver</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Geselecteerd element</h2>
+      <div id="props-empty" class="hint">Selecteer een element op het doek om eigenschappen te bewerken.</div>
+      <div id="props-panel" class="hidden">
+        <label class="row-label">
+          Kleur
+          <input type="color" id="prop-color" value="#d4af37" />
+        </label>
+        <label class="row-label">
+          Grootte
+          <input type="range" id="prop-size" min="20" max="400" value="100" />
+          <span id="prop-size-val">100</span>
+        </label>
+        <label class="row-label">
+          Rotatie
+          <input type="range" id="prop-rot" min="-180" max="180" value="0" />
+          <span id="prop-rot-val">0°</span>
+        </label>
+        <label class="row-label">
+          Spiegelen
+          <span class="row-buttons">
+            <button id="prop-flip-h">⇆ Horiz.</button>
+            <button id="prop-flip-v">⇅ Vert.</button>
+          </span>
+        </label>
+        <div id="text-props" class="hidden">
+          <label class="row-label">
+            Tekst
+            <input type="text" id="prop-text" />
+          </label>
+        </div>
+        <div class="row-buttons">
+          <button id="prop-duplicate">Dupliceer</button>
+          <button id="prop-front">Naar voor</button>
+          <button id="prop-back">Naar achter</button>
+        </div>
+        <button id="prop-delete" class="danger">Verwijder</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Lagen</h2>
+      <ul id="layers-list" class="layers"></ul>
+    </div>
+  </aside>
+</main>
+
+<footer class="bottombar">
+  <span>Hurore Designer · Gebouwd voor de Syrisch-orthodoxe gemeenschap</span>
+  <span class="kbd-hint">Sleep om te verplaatsen · Klik buiten om te deselecteren · Delete om te verwijderen</span>
+</footer>
+
+<script src="js/symbols.js"></script>
+<script src="js/hurore.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
