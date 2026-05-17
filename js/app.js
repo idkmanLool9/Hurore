@@ -19,7 +19,6 @@ const state = {
   fringeColor: "#d4af37",
   borderStyle: "brocade",
   defaultThread: "#d4af37",
-  viewMode: "flat",
   elements: [],   // each: {id, type:'symbol'|'text', symbolId?, text?, font?, x, y, size, rotation, color, flipH, flipV}
   selectedId: null,
 };
@@ -52,7 +51,6 @@ function snapshot() {
     fringeColor: state.fringeColor,
     borderStyle: state.borderStyle,
     defaultThread: state.defaultThread,
-    viewMode: state.viewMode,
     elements: state.elements,
     selectedId: state.selectedId,
   });
@@ -112,28 +110,12 @@ function renderBackdrop() {
 }
 
 function renderHuroreTemplate() {
-  // Apply view mode transform on the hurore group.
-  if (state.viewMode === "worn") {
-    // simulate the strips crossing slightly at the neck.
-    huroreGroup.setAttribute("transform", "");
-    // Custom render: rotate each strip subtly toward center
-    huroreGroup.innerHTML = renderHurore({
-      fabricColor: state.fabricColor,
-      borderColor: state.borderColor,
-      fringeColor: state.fringeColor,
-      borderStyle: state.borderStyle,
-      viewMode: state.viewMode,
-    });
-  } else {
-    huroreGroup.setAttribute("transform", "");
-    huroreGroup.innerHTML = renderHurore({
-      fabricColor: state.fabricColor,
-      borderColor: state.borderColor,
-      fringeColor: state.fringeColor,
-      borderStyle: state.borderStyle,
-      viewMode: state.viewMode,
-    });
-  }
+  huroreGroup.innerHTML = renderHurore({
+    fabricColor: state.fabricColor,
+    borderColor: state.borderColor,
+    fringeColor: state.fringeColor,
+    borderStyle: state.borderStyle,
+  });
 }
 
 // ---------- ELEMENT RENDERING ----------
@@ -368,13 +350,13 @@ canvas.addEventListener("pointerdown", (e) => {
 
 // ---------- ADDING ELEMENTS ----------
 function addSymbol(symbolId) {
-  const b = flatDesignBounds();
+  const p = defaultElementPosition();
   const el = {
     id: genId(),
     type: "symbol",
     symbolId,
-    x: b.cx,
-    y: b.cy + 200,
+    x: p.x,
+    y: p.y,
     size: 140,
     rotation: 0,
     color: state.defaultThread,
@@ -392,14 +374,14 @@ function addSymbol(symbolId) {
 
 function addText(text, font) {
   if (!text.trim()) return;
-  const b = flatDesignBounds();
+  const p = defaultElementPosition();
   const el = {
     id: genId(),
     type: "text",
     text: text.trim(),
     font: font || "Cinzel, serif",
-    x: b.cx,
-    y: b.cy,
+    x: p.x,
+    y: p.y,
     size: 120,
     rotation: 0,
     color: state.defaultThread,
@@ -605,16 +587,6 @@ function setupBindings() {
       renderDefs();
       renderHuroreTemplate();
       commit();
-    });
-  });
-
-  // View mode
-  document.querySelectorAll("#view-mode button").forEach((b) => {
-    b.addEventListener("click", () => {
-      document.querySelectorAll("#view-mode button").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      state.viewMode = b.dataset.mode;
-      renderHuroreTemplate();
     });
   });
 
@@ -837,9 +809,6 @@ function renderAll() {
   $("fringe-color").value = state.fringeColor;
   $("default-thread").value = state.defaultThread;
   $("border-style").value = state.borderStyle;
-  document.querySelectorAll("#view-mode button").forEach((b) => {
-    b.classList.toggle("active", b.dataset.mode === state.viewMode);
-  });
 }
 
 // ---------- BOOT ----------
