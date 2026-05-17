@@ -459,22 +459,36 @@ function sendToBack() {
 }
 
 // ---------- PANELS ----------
-function buildSymbolLibrary() {
+function buildSymbolLibrary(filter = "") {
   const container = $("symbol-library");
-  // Group by category
+  const q = filter.trim().toLowerCase();
+  const matches = (s) =>
+    !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+
+  // Group by category, preserving original order
   const cats = {};
   for (const s of SYMBOL_LIBRARY) {
+    if (!matches(s)) continue;
     (cats[s.category] = cats[s.category] || []).push(s);
   }
+  const catNames = Object.keys(cats);
+
+  if (catNames.length === 0) {
+    container.innerHTML = `<div class="no-results">Geen symbolen gevonden voor "${escapeHtml(filter)}"</div>`;
+    return;
+  }
+
   let html = "";
-  for (const cat of Object.keys(cats)) {
-    html += `<div class="symbol-category" style="grid-column: 1 / -1;">${cat}</div>`;
+  for (const cat of catNames) {
+    html += `<div class="symbol-category">${cat}</div>`;
+    html += `<div class="symbol-grid">`;
     for (const s of cats[cat]) {
       html += `<div class="symbol-cell" data-symbol-id="${s.id}" title="${s.name}">
-        <svg viewBox="0 0 100 100">${s.svg}</svg>
+        <svg class="sym-art" viewBox="0 0 100 100">${s.svg}</svg>
         <div class="symbol-label">${s.name}</div>
       </div>`;
     }
+    html += `</div>`;
   }
   container.innerHTML = html;
   container.querySelectorAll(".symbol-cell").forEach((cell) => {
@@ -483,6 +497,7 @@ function buildSymbolLibrary() {
 }
 
 function renderPropsPanel() {
+  syncElementCount();
   const el = state.elements.find((e) => e.id === state.selectedId);
   if (!el) {
     $("props-panel").classList.add("hidden");
@@ -492,6 +507,7 @@ function renderPropsPanel() {
   $("props-panel").classList.remove("hidden");
   $("props-empty").classList.add("hidden");
   $("prop-color").value = rgbToHex(el.color);
+  syncSwatchBg("prop-color");
   $("prop-size").value = el.size;
   $("prop-size-val").textContent = el.size;
   $("prop-rot").value = el.rotation;
@@ -517,7 +533,7 @@ function rgbToHex(c) {
 function renderLayers() {
   const list = $("layers-list");
   if (!state.elements.length) {
-    list.innerHTML = `<li style="border:none; background:transparent; color:var(--text-dim); padding-left:0; cursor:default;">Nog geen elementen</li>`;
+    list.innerHTML = `<li class="empty">Nog geen elementen — klik een symbool of voeg tekst toe</li>`;
     return;
   }
   // Reverse so top layers appear first
@@ -624,8 +640,68 @@ function syncTemplateUi() {
   $("bg-photo-clear").disabled = !state.photoDataUri;
 }
 
+// ---------- UI WIRING (tabs, collapsibles, search, chips, menu) ----------
+function setupUiInteractions() {
+  // Tabs
+  document.querySelectorAll(".tabs .tab").forEach((t) => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".tabs .tab").forEach((x) => {
+        const on = x === t;
+        x.classList.toggle("active", on);
+        x.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      document.querySelectorAll(".tab-panel").forEach((p) => {
+        p.classList.toggle("active", p.id === "panel-" + t.dataset.tab);
+      });
+    });
+  });
+
+  // Collapsible sections
+  document.querySelectorAll(".section-header").forEach((h) => {
+    h.addEventListener("click", () => {
+      const target = document.getElementById(h.dataset.target);
+      const open = h.getAttribute("aria-expanded") !== "false";
+      const next = !open;
+      h.setAttribute("aria-expanded", next ? "true" : "false");
+      if (target) target.hidden = !next;
+    });
+  });
+
+  // Symbol search
+  $("symbol-search")?.addEventListener("input", (e) => {
+    buildSymbolLibrary(e.target.value);
+  });
+
+  // Border-style chip row → keeps hidden <select> in sync
+  document.querySelectorAll("#border-style-chips button").forEach((b) => {
+    b.addEventListener("click", () => {
+      state.borderStyle = b.dataset.value;
+      $("border-style").value = state.borderStyle;
+      syncBorderStyleChips();
+      renderHuroreTemplate();
+      commit();
+    });
+  });
+
+  // Export split menu
+  const expBtn = $("btn-export");
+  const expMenu = $("export-menu");
+  if (expBtn && expMenu) {
+    expBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      expMenu.classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (!expMenu.contains(e.target) && e.target !== expBtn) {
+        expMenu.classList.remove("open");
+      }
+    });
+  }
+}
+
 // ---------- COLOR / SETTINGS BINDINGS ----------
 function setupBindings() {
+  setupUiInteractions();
   // Template switch
   $("tpl-synthetic").addEventListener("click", () => {
     state.template = "synthetic";
@@ -695,6 +771,7 @@ function setupBindings() {
   $("fabric-color").addEventListener("input", (e) => {
     dropPhotoIfActive();
     state.fabricColor = e.target.value;
+    syncSwatchBg("fabric-color");
     renderDefs();
     renderHuroreTemplate();
   });
@@ -703,6 +780,7 @@ function setupBindings() {
   $("border-color").addEventListener("input", (e) => {
     dropPhotoIfActive();
     state.borderColor = e.target.value;
+    syncSwatchBg("border-color");
     renderHuroreTemplate();
   });
   $("border-color").addEventListener("change", commit);
@@ -710,6 +788,7 @@ function setupBindings() {
   $("fringe-color").addEventListener("input", (e) => {
     dropPhotoIfActive();
     state.fringeColor = e.target.value;
+    syncSwatchBg("fringe-color");
     renderHuroreTemplate();
   });
   $("fringe-color").addEventListener("change", commit);
@@ -720,10 +799,11 @@ function setupBindings() {
     commit();
   });
 
-  $("default-thread").addEventListener("change", (e) => {
+  $("default-thread").addEventListener("input", (e) => {
     state.defaultThread = e.target.value;
-    commit();
+    syncSwatchBg("default-thread");
   });
+  $("default-thread").addEventListener("change", commit);
 
   // Presets — colour set + optional bundled photo template
   document.querySelectorAll(".preset").forEach((b) => {
@@ -776,6 +856,7 @@ function setupBindings() {
     const el = state.elements.find((x) => x.id === state.selectedId);
     if (!el) return;
     el.color = e.target.value;
+    syncSwatchBg("prop-color");
     updateElementTransform(el);
     renderLayers();
   });
@@ -957,12 +1038,44 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ---------- STATUS ----------
+// ---------- STATUS TOAST ----------
 let statusTimer;
 function setStatus(msg) {
-  $("status").textContent = msg;
+  const t = $("toast");
+  if (!t) return;
+  t.textContent = "";
+  // small accent dot
+  const dot = document.createElementNS(SVG_NS, "svg");
+  dot.setAttribute("viewBox", "0 0 24 24");
+  dot.innerHTML = `<circle cx="12" cy="12" r="5" fill="currentColor"/>`;
+  t.appendChild(dot);
+  t.appendChild(document.createTextNode(msg));
+  t.classList.add("show");
   clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => { $("status").textContent = "Klaar"; }, 2500);
+  statusTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+// ---------- UI SYNC HELPERS ----------
+function syncSwatchBg(inputId) {
+  const inp = $(inputId);
+  if (!inp) return;
+  const swatch = inp.closest(".swatch");
+  if (swatch) swatch.style.background = inp.value;
+}
+
+function syncBorderStyleChips() {
+  document.querySelectorAll("#border-style-chips button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.value === state.borderStyle);
+  });
+}
+
+function syncElementCount() {
+  const el = $("element-count");
+  if (!el) return;
+  const n = state.elements.length;
+  el.textContent = n === 0 ? "Leeg doek" :
+                   n === 1 ? "1 element" :
+                   `${n} elementen`;
 }
 
 // ---------- MASTER RENDER ----------
@@ -979,6 +1092,12 @@ function renderAll() {
   $("fringe-color").value = state.fringeColor;
   $("default-thread").value = state.defaultThread;
   $("border-style").value = state.borderStyle;
+  syncSwatchBg("fabric-color");
+  syncSwatchBg("border-color");
+  syncSwatchBg("fringe-color");
+  syncSwatchBg("default-thread");
+  syncBorderStyleChips();
+  syncElementCount();
   syncTemplateUi();
 }
 
