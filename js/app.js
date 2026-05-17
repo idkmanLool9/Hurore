@@ -368,13 +368,14 @@ canvas.addEventListener("pointerdown", (e) => {
 
 // ---------- ADDING ELEMENTS ----------
 function addSymbol(symbolId) {
+  const b = flatDesignBounds();
   const el = {
     id: genId(),
     type: "symbol",
     symbolId,
-    x: HURORE_GEOMETRY.canvasW / 2,
-    y: HURORE_GEOMETRY.canvasH / 2,
-    size: 120,
+    x: b.cx,
+    y: b.cy + 200,
+    size: 140,
     rotation: 0,
     color: state.defaultThread,
     flipH: false,
@@ -391,13 +392,14 @@ function addSymbol(symbolId) {
 
 function addText(text, font) {
   if (!text.trim()) return;
+  const b = flatDesignBounds();
   const el = {
     id: genId(),
     type: "text",
     text: text.trim(),
     font: font || "Cinzel, serif",
-    x: HURORE_GEOMETRY.canvasW / 2,
-    y: HURORE_GEOMETRY.canvasH / 2,
+    x: b.cx,
+    y: b.cy,
     size: 120,
     rotation: 0,
     color: state.defaultThread,
