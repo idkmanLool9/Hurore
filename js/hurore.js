@@ -1,13 +1,12 @@
 /* Hurore template renderer.
  *
  * Renders a blank Syriac Orthodox Hurore (priestly stole) matching the
- * traditional draped Λ shape: two tapered strips emerging from a small
- * fold at the top, draping down and outward — the front strip falling to
- * the lower-left with full fringe, the back strip draping to the
- * lower-right and partly hidden behind the front strip.
+ * reference photo: one continuous strip folded into an asymmetric Λ shape.
+ * The front (left) arm hangs to the lower-left with a full gold fringe.
+ * The back (right) arm drapes to the lower-right; its end is partly
+ * cropped/draped behind the front, with a shorter visible fringe.
  *
- * The whole perimeter of each strip has a brocade border. The bottom
- * edges carry dense fringe.
+ * Gold brocade border wraps both long edges of each arm.
  *
  * Canvas viewBox: 1200 x 1600.
  */
@@ -15,11 +14,10 @@
 const HURORE_GEOMETRY = {
   canvasW: 1200,
   canvasH: 1600,
-  borderW: 26,    // gold border thickness
-  fringeH: 95,    // fringe length
+  borderW: 28,
+  fringeH: 110,
 };
 
-// ---------- DEFS / PATTERNS ----------
 function buildHuroreDefs() {
   return `
     <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
@@ -37,60 +35,53 @@ function buildHuroreDefs() {
 function buildFabricDefs(fabricColor) {
   return `
     <linearGradient id="fabric-shade-l" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0"    stop-color="rgba(0,0,0,0.40)"/>
+      <stop offset="0"    stop-color="rgba(0,0,0,0.45)"/>
       <stop offset="0.25" stop-color="rgba(0,0,0,0)"/>
       <stop offset="0.7"  stop-color="rgba(0,0,0,0)"/>
-      <stop offset="1"    stop-color="rgba(0,0,0,0.35)"/>
+      <stop offset="1"    stop-color="rgba(0,0,0,0.40)"/>
     </linearGradient>
     <linearGradient id="fabric-shade-r" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0"    stop-color="rgba(0,0,0,0.30)"/>
+      <stop offset="0"    stop-color="rgba(0,0,0,0.35)"/>
       <stop offset="0.3"  stop-color="rgba(0,0,0,0)"/>
       <stop offset="0.7"  stop-color="rgba(0,0,0,0)"/>
-      <stop offset="1"    stop-color="rgba(0,0,0,0.45)"/>
+      <stop offset="1"    stop-color="rgba(0,0,0,0.50)"/>
     </linearGradient>
     <linearGradient id="fabric-highlight" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0"   stop-color="rgba(255,255,255,0)"/>
-      <stop offset="0.5" stop-color="rgba(255,255,255,0.10)"/>
+      <stop offset="0.5" stop-color="rgba(255,255,255,0.12)"/>
       <stop offset="1"   stop-color="rgba(255,255,255,0)"/>
     </linearGradient>
-    <linearGradient id="border-shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0"   stop-color="rgba(255,255,255,0.35)"/>
-      <stop offset="0.5" stop-color="rgba(255,255,255,0)"/>
-      <stop offset="1"   stop-color="rgba(0,0,0,0.25)"/>
+
+    <!-- Brocade texture: transparent base + ornamental dark/light marks.
+         Designed to overlay a solid gold fill, so colour works for any
+         user-chosen border colour. -->
+    <pattern id="brocade-tex" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+      <!-- floral/quatrefoil silhouette -->
+      <path d="M11 3 C7 3 5 6 5 11 C5 16 7 19 11 19 C15 19 17 16 17 11 C17 6 15 3 11 3 Z"
+            fill="rgba(0,0,0,0.18)"/>
+      <path d="M11 6 C9 6 8 8 8 11 C8 14 9 16 11 16 C13 16 14 14 14 11 C14 8 13 6 11 6 Z"
+            fill="rgba(255,255,255,0.18)"/>
+      <circle cx="11" cy="11" r="1.2" fill="rgba(0,0,0,0.35)"/>
+      <path d="M0 11 L4 11 M18 11 L22 11" stroke="rgba(0,0,0,0.20)" stroke-width="0.6"/>
+      <path d="M11 0 L11 3 M11 19 L11 22" stroke="rgba(0,0,0,0.20)" stroke-width="0.6"/>
+    </pattern>
+
+    <pattern id="rope-tex" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+      <path d="M0 7 Q3.5 0 7 7 T14 7" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.6"/>
+      <path d="M0 7 Q3.5 14 7 7 T14 7" fill="none" stroke="rgba(255,255,255,0.30)" stroke-width="0.9"/>
+    </pattern>
+
+    <linearGradient id="border-sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="rgba(255,255,255,0.55)"/>
+      <stop offset="0.5"  stop-color="rgba(255,255,255,0)"/>
+      <stop offset="1"    stop-color="rgba(0,0,0,0.30)"/>
     </linearGradient>
-
-    <!-- Brocade: small repeating ornamental motif -->
-    <pattern id="brocade" x="0" y="0" width="18" height="18" patternUnits="userSpaceOnUse">
-      <rect width="18" height="18" fill="currentColor"/>
-      <path d="M9 2 L13 9 L9 16 L5 9 Z" fill="rgba(0,0,0,0.25)"/>
-      <circle cx="9" cy="9" r="1.4" fill="rgba(255,255,255,0.4)"/>
-      <path d="M0 9 L3 9 M15 9 L18 9" stroke="rgba(0,0,0,0.22)" stroke-width="0.7"/>
-      <path d="M9 0 L9 2 M9 16 L9 18" stroke="rgba(0,0,0,0.22)" stroke-width="0.7"/>
-    </pattern>
-
-    <pattern id="rope" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
-      <rect width="12" height="12" fill="currentColor"/>
-      <path d="M0 6 Q3 0 6 6 T12 6" fill="none" stroke="rgba(0,0,0,0.32)" stroke-width="1.4"/>
-      <path d="M0 6 Q3 12 6 6 T12 6" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.8"/>
-    </pattern>
   `;
 }
 
 // ---------- HELPERS ----------
-function borderFillFor(borderStyle, borderColor) {
-  if (borderStyle === "brocade") return `url(#brocade)`;
-  if (borderStyle === "rope") return `url(#rope)`;
-  if (borderStyle === "none") return "none";
-  return borderColor;
-}
-
-/* Linearly interpolate between two points. */
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-/* Build a tapered, draped strip from a list of corner points and curves.
- *
- * The strip is defined by 4 corners (TL, TR, BR, BL) and two cubic-bezier
- * sides (outer and inner). Bottom and top are straight lines. */
 function stripPath(s) {
   const { TL, TR, BR, BL, outerC1, outerC2, innerC1, innerC2 } = s;
   return `M ${TL.x} ${TL.y}
@@ -101,13 +92,7 @@ function stripPath(s) {
           Z`;
 }
 
-/* Inset a strip definition inward by `inset` pixels to produce the inner
- * border path. We approximate by moving each corner inward toward the
- * strip's interior. */
 function insetStrip(s, inset) {
-  // Direction from TL→TR (across top) and BL→BR (across bottom): the strip's
-  // width direction. We push TL and BL inward (right), TR and BR inward (left).
-  // Vertically we push TL/TR down and BR/BL up.
   return {
     TL: { x: s.TL.x + inset, y: s.TL.y + inset },
     TR: { x: s.TR.x - inset, y: s.TR.y + inset },
@@ -120,57 +105,77 @@ function insetStrip(s, inset) {
   };
 }
 
-/* Dense fringe along a (slightly tilted) bottom edge from p1 to p2.
- * Each thread hangs straight down with small length/sway variations. */
-function buildFringeAlong({ p1, p2, length, color, count = 70 }) {
-  let out = `<g class="fringe" stroke="${color}" stroke-linecap="round" opacity="0.95">`;
+/* Fringe along an edge from p1→p2. Threads hang straight down with small
+ * length and sway variations to look hand-tied. */
+function buildFringeAlong({ p1, p2, length, color, count = 75 }) {
+  let out = `<g class="fringe" stroke="${color}" stroke-linecap="round" opacity="0.97">`;
+  // attachment band
+  out += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
+                stroke="${color}" stroke-width="4" opacity="0.7"/>`;
   for (let i = 0; i < count; i++) {
     const t = (i + 0.5) / count;
     const x = lerp(p1.x, p2.x, t);
     const y = lerp(p1.y, p2.y, t);
     const len = length * (0.78 + 0.22 * Math.abs(Math.sin(i * 0.7 + (i % 3) * 0.4)));
-    const sway = (Math.sin(i * 1.3) + Math.cos(i * 0.9)) * 1.4;
-    const w = 1.1 + (i % 6 === 0 ? 0.5 : 0);
+    const sway = (Math.sin(i * 1.3) + Math.cos(i * 0.9)) * 1.6;
+    const w = 1.2 + (i % 6 === 0 ? 0.6 : 0);
     out += `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}"
                   x2="${(x + sway).toFixed(1)}" y2="${(y + len).toFixed(1)}"
                   stroke-width="${w}"/>`;
   }
-  // Header band where fringe attaches
-  out += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
-                stroke="${color}" stroke-width="3" opacity="0.55"/>`;
   out += `</g>`;
   return out;
 }
 
-/* Render one strip with fabric, brocade border and fringe. */
-function renderStrip({ strip, fabricColor, borderColor, borderStyle, fringeColor, fringeLength, shadeGradient }) {
+/* Render one strip with fabric, brocade border, and fringe.
+ *
+ * Border is composed as: solid border colour (visible base) + transparent
+ * brocade/rope texture overlay + a subtle sheen. This keeps the gold/coloured
+ * brocade visible for any user-chosen border colour. */
+function renderStrip({
+  strip, fabricColor, borderColor, borderStyle,
+  fringeColor, fringeLength, shadeGradient,
+  fringe = true,
+}) {
   const inset = HURORE_GEOMETRY.borderW;
   const outer = stripPath(strip);
   const inner = stripPath(insetStrip(strip, inset));
-  const bFill = borderFillFor(borderStyle, borderColor);
-  const fringe = buildFringeAlong({
+
+  let borderLayer = "";
+  if (borderStyle !== "none") {
+    const texId =
+      borderStyle === "brocade" ? "brocade-tex" :
+      borderStyle === "rope"    ? "rope-tex"    : null;
+    borderLayer = `
+      <g filter="url(#soft-shadow)">
+        <!-- base colour of the border -->
+        <path d="${outer} ${inner}" fill="${borderColor}" fill-rule="evenodd"/>
+        ${texId ? `
+          <path d="${outer} ${inner}" fill="url(#${texId})" fill-rule="evenodd"/>
+        ` : ``}
+        <!-- subtle sheen + outline -->
+        <path d="${outer} ${inner}" fill="url(#border-sheen)"
+              fill-rule="evenodd" opacity="0.45"/>
+        <path d="${outer} ${inner}" fill="none" fill-rule="evenodd"
+              stroke="rgba(0,0,0,0.35)" stroke-width="0.6"/>
+      </g>
+    `;
+  }
+
+  const fringeLayer = fringe ? buildFringeAlong({
     p1: strip.BL, p2: strip.BR,
-    length: fringeLength, color: fringeColor, count: 75,
-  });
+    length: fringeLength, color: fringeColor, count: 80,
+  }) : "";
 
   return `
     <g>
       <!-- Fabric body -->
       <path d="${outer}" fill="${fabricColor}"/>
-      <path d="${outer}" fill="url(#${shadeGradient})" opacity="0.7"/>
+      <path d="${outer}" fill="url(#${shadeGradient})" opacity="0.75"/>
       <path d="${outer}" fill="url(#fabric-highlight)"/>
 
-      <!-- Brocade border via even-odd fill of outer minus inner -->
-      ${borderStyle !== "none" ? `
-        <g color="${borderColor}" filter="url(#soft-shadow)">
-          <path d="${outer} ${inner}" fill="${bFill}" fill-rule="evenodd"
-                stroke="rgba(0,0,0,0.25)" stroke-width="0.5"/>
-          <path d="${outer} ${inner}" fill="url(#border-shine)"
-                fill-rule="evenodd" opacity="0.5"/>
-        </g>
-      ` : ``}
-
-      ${fringe}
+      ${borderLayer}
+      ${fringeLayer}
     </g>
   `;
 }
@@ -179,75 +184,81 @@ function renderStrip({ strip, fabricColor, borderColor, borderStyle, fringeColor
 function renderHurore({ fabricColor, borderColor, fringeColor, borderStyle }) {
   const g = HURORE_GEOMETRY;
 
-  // ---------- STRIP DEFINITIONS ----------
-  // Coordinates derived from the reference photo. The fold is at the
-  // top-center where the two strips meet. The front (left) strip drapes
-  // down and outward to the lower-left; the back (right) strip drapes
-  // to the lower-right.
+  /* Coordinates from the reference photo. The strip is ONE continuous piece
+   * folded at the apex (~600, 90). Both arms share the apex edge so the fold
+   * reads as a single peak rather than two separate strips meeting. */
+
+  // LEFT arm (front, fully visible, with full fringe)
   const front = {
-    // Top corners (narrow at the fold)
-    TL: { x: 520, y: 110 },
-    TR: { x: 580, y: 110 },
-    // Bottom corners (wide, slight tilt: BL slightly higher than BR
-    // because the fabric drapes diagonally)
-    BR: { x: 470, y: 1330 },
-    BL: { x: 80,  y: 1280 },
-    // Outer (left) edge bulges outward to the left
-    outerC1: { x: 470, y: 450 },
+    TL: { x: 594, y: 92 },
+    TR: { x: 608, y: 92 },
+    BR: { x: 380, y: 1380 },
+    BL: { x: 70,  y: 1320 },
+    outerC1: { x: 560, y: 360 },
     outerC2: { x: 140, y: 1000 },
-    // Inner (right) edge curves more subtly
-    innerC1: { x: 600, y: 450 },
-    innerC2: { x: 510, y: 950 },
+    innerC1: { x: 640, y: 420 },
+    innerC2: { x: 430, y: 980 },
   };
 
+  // RIGHT arm (back, drapes to lower-right, partly cropped/behind front).
+  //
+  // Note: stripPath draws TR→BR via innerC1/C2 (right edge for the front
+  // arm, but the OUTER edge here since the back arm is mirrored), and
+  // BL→TL via outerC1/C2 (left edge, which is the INNER edge of the back
+  // arm). So for the back arm the "inner" controls bow OUT to the right
+  // and the "outer" controls hug the centerline.
   const back = {
-    // Top corners just to the right of the front strip's top
-    TL: { x: 600, y: 110 },
-    TR: { x: 660, y: 110 },
-    // Bottom corners draping to the right
-    BR: { x: 1130, y: 1240 },
-    BL: { x: 560,  y: 1290 },
-    // Outer (right) edge bulges outward to the right
-    outerC1: { x: 720, y: 450 },
-    outerC2: { x: 1060, y: 900 },
-    // Inner (left) edge curves down (partly hidden behind front strip)
-    innerC1: { x: 590, y: 500 },
-    innerC2: { x: 520, y: 1050 },
+    TL: { x: 608, y: 92 },
+    TR: { x: 622, y: 92 },
+    BR: { x: 1000, y: 1210 },
+    BL: { x: 700,  y: 1280 },
+    innerC1: { x: 720, y: 380 },
+    innerC2: { x: 1020, y: 880 },
+    outerC1: { x: 640, y: 460 },
+    outerC2: { x: 660, y: 1040 },
   };
 
-  // Shadow under the lowest hanging point (the front strip's fringe)
-  const shadow = `<ellipse cx="${(front.BL.x + front.BR.x)/2}"
-                           cy="${Math.max(front.BL.y, front.BR.y) + g.fringeH + 30}"
-                           rx="220" ry="22"
-                           fill="rgba(0,0,0,0.5)" filter="url(#blur)"/>`;
+  // Soft drop shadow below the lower-hanging (left) fringe
+  const shadow = `
+    <ellipse cx="${(front.BL.x + front.BR.x)/2}"
+             cy="${Math.max(front.BL.y, front.BR.y) + g.fringeH + 40}"
+             rx="230" ry="20"
+             fill="rgba(0,0,0,0.55)" filter="url(#blur)"/>
+  `;
 
-  // Small fold accent at the top where the two strips meet
-  const foldCx = (front.TR.x + back.TL.x) / 2;
-  const foldY = front.TL.y;
+  // Triangular fold cap at the apex: a small dark notch + a thin gold
+  // ridge across the very top edge, simulating the folded crease.
+  const apexCx = (front.TR.x + back.TL.x) / 2;
+  const apexY = Math.min(front.TL.y, back.TL.y);
   const foldAccent = `
-    <ellipse cx="${foldCx}" cy="${foldY - 4}" rx="50" ry="10"
-             fill="rgba(0,0,0,0.4)" filter="url(#blur)"/>
-    <path d="M ${foldCx - 45} ${foldY - 2}
-             Q ${foldCx} ${foldY - 18} ${foldCx + 45} ${foldY - 2}"
-          fill="${borderColor}" opacity="0.85"/>
-    <path d="M ${foldCx - 45} ${foldY - 2}
-             Q ${foldCx} ${foldY - 18} ${foldCx + 45} ${foldY - 2}"
-          fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>
+    <!-- soft shadow inside the fold -->
+    <path d="M ${apexCx - 26} ${apexY + 4}
+             L ${apexCx} ${apexY + 22}
+             L ${apexCx + 26} ${apexY + 4} Z"
+          fill="rgba(0,0,0,0.55)" filter="url(#blur)"/>
+    <!-- gold ridge across the top -->
+    <path d="M ${front.TL.x - 2} ${apexY + 1}
+             L ${back.TR.x + 2} ${apexY + 1}"
+          stroke="${borderColor}" stroke-width="6"
+          stroke-linecap="round" opacity="0.95"/>
+    <path d="M ${front.TL.x - 2} ${apexY + 1}
+             L ${back.TR.x + 2} ${apexY + 1}"
+          stroke="rgba(0,0,0,0.4)" stroke-width="1" opacity="0.6"/>
   `;
 
   return `
     ${shadow}
 
-    <!-- Back strip first so the front overlaps it -->
+    <!-- Back arm first so the front overlaps it at the apex -->
     ${renderStrip({
       strip: back,
       fabricColor, borderColor, borderStyle,
       fringeColor,
-      fringeLength: g.fringeH * 0.75,
+      fringeLength: g.fringeH * 0.7,
       shadeGradient: "fabric-shade-r",
     })}
 
-    <!-- Front strip on top -->
+    <!-- Front arm on top -->
     ${renderStrip({
       strip: front,
       fabricColor, borderColor, borderStyle,
@@ -260,10 +271,10 @@ function renderHurore({ fabricColor, borderColor, fringeColor, borderStyle }) {
   `;
 }
 
-/* Sensible default placement for new symbols: on the visible front strip,
+/* Sensible default placement for new symbols: on the visible front arm,
  * in its wider lower portion. */
 function defaultElementPosition() {
-  return { x: 290, y: 1050 };
+  return { x: 240, y: 1050 };
 }
 
 if (typeof module !== "undefined" && module.exports) {
