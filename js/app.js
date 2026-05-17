@@ -586,6 +586,34 @@ function loadPhotoFromFile(file) {
   });
 }
 
+/* Fetch a bundled asset URL and convert it to a data URI so the photo
+ * survives SVG/PNG export and JSON save/load without depending on the
+ * site origin. */
+function fetchPhotoAsDataUri(url) {
+  return fetch(url).then((r) => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.blob();
+  }).then((blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  }));
+}
+
+/* Changing a colour after a photo template is active doesn't visually
+ * change the photo — it only takes effect on the synthetic version.
+ * Switch back to synthetic automatically so the picker actually does
+ * something. The photo stays in state.photoDataUri, accessible again
+ * via Sjabloon → Foto. */
+function dropPhotoIfActive() {
+  if (state.template !== "photo") return;
+  state.template = "synthetic";
+  syncTemplateUi();
+  renderBackdrop();
+  renderHuroreTemplate();
+}
+
 function syncTemplateUi() {
   const photoActive = state.template === "photo";
   $("tpl-synthetic").classList.toggle("active", !photoActive);
@@ -665,6 +693,7 @@ function setupBindings() {
   });
 
   $("fabric-color").addEventListener("input", (e) => {
+    dropPhotoIfActive();
     state.fabricColor = e.target.value;
     renderDefs();
     renderHuroreTemplate();
@@ -672,12 +701,14 @@ function setupBindings() {
   $("fabric-color").addEventListener("change", commit);
 
   $("border-color").addEventListener("input", (e) => {
+    dropPhotoIfActive();
     state.borderColor = e.target.value;
     renderHuroreTemplate();
   });
   $("border-color").addEventListener("change", commit);
 
   $("fringe-color").addEventListener("input", (e) => {
+    dropPhotoIfActive();
     state.fringeColor = e.target.value;
     renderHuroreTemplate();
   });
@@ -694,9 +725,9 @@ function setupBindings() {
     commit();
   });
 
-  // Presets
+  // Presets — colour set + optional bundled photo template
   document.querySelectorAll(".preset").forEach((b) => {
-    b.addEventListener("click", () => {
+    b.addEventListener("click", async () => {
       state.fabricColor = b.dataset.fabric;
       state.borderColor = b.dataset.border;
       state.fringeColor = b.dataset.border;
@@ -705,7 +736,25 @@ function setupBindings() {
       $("border-color").value = state.borderColor;
       $("fringe-color").value = state.fringeColor;
       $("default-thread").value = state.defaultThread;
+
+      if (b.dataset.photo) {
+        setStatus("Sjabloon laden…");
+        try {
+          state.photoDataUri = await fetchPhotoAsDataUri(b.dataset.photo);
+          state.template = "photo";
+          setStatus("Sjabloon geladen");
+        } catch (err) {
+          console.warn("Preset-foto niet beschikbaar, val terug op getekend:", err);
+          state.template = "synthetic";
+          setStatus("Foto niet beschikbaar, getekende versie gebruikt");
+        }
+      } else {
+        state.template = "synthetic";
+      }
+
+      syncTemplateUi();
       renderDefs();
+      renderBackdrop();
       renderHuroreTemplate();
       commit();
     });
